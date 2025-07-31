@@ -13,12 +13,10 @@ from tqdm import tqdm
 load_dotenv()
 
 data = {
-  "_id": "123",
-  "date": "2025-01-01",
-  "memory": "I went to the store and bought some groceries.",
-  "memory_id": "123"
+  "id": "1753986909103",
+  "memory": "This is a test",
+  "timestamp": "2025-07-31T18:35:09.103Z"
 }
-
 
 PINECONE_API_KEY=os.getenv("PINECONE_API_KEY")
 PINECONE_ENVIRONMENT="us-east-1"
@@ -45,8 +43,8 @@ if not pc.has_index(index_name):
 dense_index = pc.Index(index_name)
 
 dense_index.upsert_records(
-    namespace="data",
-    records=[data]
+    records=[data],
+    namespace="data"
 )
 
 stats = dense_index.describe_index_stats()
