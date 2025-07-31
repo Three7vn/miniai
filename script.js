@@ -6,7 +6,7 @@ let transcripts = [];
 // API base URLs
 const SPEECH_API_BASE = "http://localhost:5000/api"; // For transcript storage (if needed)
 const TTS_API_BASE = "http://localhost:5001/api"; // For ElevenLabs TTS
-const RAG_API_BASE = "http://127.0.0.1:8000/"; // For RAG API
+const RAG_API_BASE = "http://127.0.0.1:8000"; // For RAG API
 
 // Initialize the application
 document.addEventListener("DOMContentLoaded", function () {
@@ -296,26 +296,28 @@ function uploadSelectedToMemory() {
     (t) => t.id === selectedTranscriptId
   );
   if (selectedTranscript) {
-    // Convert the selected transcript to JSON
-    const jsonString = JSON.stringify(selectedTranscript, null, 2); // pretty format
-
-    test = {
-      id: String(jsonString.id),
-      memory: jsonString.text,
-      timestamp: jsonString.timestamp,
+    const data = {
+      id: String(selectedTranscript.id),
+      text: selectedTranscript.text,
+      timestamp: selectedTranscript.timestamp,
     };
 
-    const response = fetch(`${RAG_API_BASE}/embed`, {
+    fetch(`${RAG_API_BASE}/embed`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(test),
-    });
-
-    console.log(response.json());
-
-    alert("Transcript uploaded to memory and saved as .json!");
+      body: JSON.stringify(data),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Success:", data);
+        alert("Transcript uploaded to memory successfully!");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert("Error uploading transcript to memory!");
+      });
   }
 }
 
