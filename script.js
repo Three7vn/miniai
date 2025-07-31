@@ -3,13 +3,15 @@ let isRecording = false;
 let recognition = null;
 let transcripts = [];
 
-// API base URL (for transcript storage only)
-const API_BASE = 'http://localhost:5000/api';
+// API base URLs
+const SPEECH_API_BASE = 'http://localhost:5000/api'; // For transcript storage (if needed)
+const TTS_API_BASE = 'http://localhost:5001/api'; // For ElevenLabs TTS
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeSpeechRecognition();
     checkWhisperStatus();
+    checkElevenLabsStatus();
     loadTranscripts();
     
     // Set up keyboard listener for chat
@@ -139,7 +141,7 @@ function transcribeAudio() {
 // Transcript Management Functions
 async function loadTranscripts() {
     try {
-        const response = await fetch(`${API_BASE}/transcripts`);
+        const response = await fetch(`${SPEECH_API_BASE}/transcripts`);
         const data = await response.json();
         
         if (data.status === 'success') {
@@ -174,7 +176,7 @@ function addTranscriptToUI(transcriptText) {
 async function saveTranscript(transcript) {
     try {
         // Try to save to backend
-        const response = await fetch(`${API_BASE}/transcripts`, {
+        const response = await fetch(`${SPEECH_API_BASE}/transcripts`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -235,7 +237,7 @@ function selectTranscript(transcriptId) {
 
 async function deleteTranscript(transcriptId) {
     try {
-        const response = await fetch(`${API_BASE}/transcripts/${transcriptId}`, {
+        const response = await fetch(`${SPEECH_API_BASE}/transcripts/${transcriptId}`, {
             method: 'DELETE'
         });
         
@@ -261,7 +263,7 @@ async function clearTranscripts() {
     }
     
     try {
-        const response = await fetch(`${API_BASE}/transcripts/clear`, {
+        const response = await fetch(`${SPEECH_API_BASE}/transcripts/clear`, {
             method: 'DELETE'
         });
     } catch (error) {
@@ -373,6 +375,92 @@ function searchMemories() {
     }
 }
 
-function playResponse() {
-    alert('Text-to-speech playback would be implemented here.');
+// Text-to-Speech Functions using ElevenLabs
+async function playResponse() {
+    if (!selectedTranscriptId) {
+        alert('Please select a transcript first to play as speech.');
+        return;
+    }
+    
+    const selectedTranscript = transcripts.find(t => t.id === selectedTranscriptId);
+    if (!selectedTranscript) {
+        alert('Selected transcript not found.');
+        return;
+    }
+    
+    await convertTextToSpeech(selectedTranscript.text);
+}
+
+async function convertTextToSpeech(text) {
+    try {
+        const response = await fetch(`${TTS_API_BASE}/text-to-speech`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            // Play the audio file
+            playAudioFile(data.audio_file);
+        } else {
+            alert(`Text-to-speech failed: ${data.message}`);
+        }
+    } catch (error) {
+        alert(`Text-to-speech error: ${error.message}`);
+    }
+}
+
+function playAudioFile(audioFilePath) {
+    // Create audio element and play
+    const audio = new Audio(`${TTS_API_BASE}/play-audio/${encodeURIComponent(audioFilePath)}`);
+    audio.play().catch(error => {
+        console.error('Error playing audio:', error);
+        alert('Error playing audio. Please try again.');
+    });
+}
+
+// ElevenLabs Status Check
+async function checkElevenLabsStatus() {
+    const elevenLabsStatus = document.getElementById('elevenLabsStatus');
+    const elevenLabsStatus2 = document.getElementById('elevenLabsStatus2');
+    
+    try {
+        const response = await fetch(`${TTS_API_BASE}/status`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            if (elevenLabsStatus) {
+                elevenLabsStatus.textContent = 'Connected';
+                elevenLabsStatus.style.color = 'green';
+            }
+            if (elevenLabsStatus2) {
+                elevenLabsStatus2.textContent = 'Connected';
+                elevenLabsStatus2.style.color = 'green';
+            }
+        } else {
+            if (elevenLabsStatus) {
+                elevenLabsStatus.textContent = 'Not Connected';
+                elevenLabsStatus.style.color = 'red';
+            }
+            if (elevenLabsStatus2) {
+                elevenLabsStatus2.textContent = 'Not Connected';
+                elevenLabsStatus2.style.color = 'red';
+            }
+        }
+    } catch (error) {
+        if (elevenLabsStatus) {
+            elevenLabsStatus.textContent = 'Connection Error';
+            elevenLabsStatus.style.color = 'red';
+        }
+        if (elevenLabsStatus2) {
+            elevenLabsStatus2.textContent = 'Connection Error';
+            elevenLabsStatus2.style.color = 'red';
+        }
+    }
 }
