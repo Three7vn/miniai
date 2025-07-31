@@ -43,6 +43,13 @@
         <div id="transcriptsList" style="border: 1px solid black; height: 150px; overflow-y: scroll; padding: 10px; margin-bottom: 10px;">
             <p><em>No transcripts yet. Record voice and transcribe to see results here.</em></p>
         </div>
+        
+        <!-- Manual Text Input -->
+        <div style="margin-bottom: 10px;">
+            <input type="text" id="manualTextInput" placeholder="Type text to add as transcript..." style="width: 300px; padding: 5px;">
+            <button onclick="addManualTranscript()" style="margin-left: 5px;">Add Text</button>
+        </div>
+        
         <button onclick="uploadSelectedToMemory()">Upload Selected Transcript to Memory</button>
         <button onclick="clearTranscripts()">Clear All Transcripts</button>
     </div>

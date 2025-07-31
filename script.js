@@ -19,6 +19,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (chatInput) {
         chatInput.addEventListener('keypress', handleKeyPress);
     }
+    
+    // Set up keyboard listener for manual transcript input
+    const manualTextInput = document.getElementById('manualTextInput');
+    if (manualTextInput) {
+        manualTextInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                addManualTranscript();
+            }
+        });
+    }
 });
 
 // Initialize Web Speech API
@@ -174,6 +184,32 @@ function addTranscriptToUI(transcriptText) {
 function saveTranscript(transcript) {
     // Save to local storage
     localStorage.setItem('transcripts', JSON.stringify(transcripts));
+}
+
+// Manual transcript addition
+function addManualTranscript() {
+    const input = document.getElementById('manualTextInput');
+    const text = input.value.trim();
+    
+    if (!text) {
+        alert('Please enter some text to add as a transcript.');
+        return;
+    }
+    
+    // Add the text as a transcript
+    addTranscriptToUI(text);
+    
+    // Clear the input field
+    input.value = '';
+    
+    // Show feedback
+    const voiceStatus = document.getElementById('voiceStatus');
+    const originalStatus = voiceStatus.textContent;
+    voiceStatus.textContent = 'Manual transcript added!';
+    
+    setTimeout(() => {
+        voiceStatus.textContent = originalStatus;
+    }, 2000);
 }
 
 function displayTranscripts() {
