@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capsule AI Test Interface</title>
+    <script src="script.js"></script>
+</head>
+<body>
+    <h1>Capsule AI Test Interface</h1>
+    <p>Basic interface for testing AI features</p>
+    
+    <hr>
+    
+    <!-- Chat Section -->
+    <h2>AI Conversation</h2>
+    <div>
+        <div id="chatMessages" style="border: 1px solid black; height: 200px; overflow-y: scroll; padding: 10px; margin-bottom: 10px;">
+            <p><strong>Capsule AI:</strong> Hello! I'm your AI companion. Ask me anything or share a memory with me.</p>
+        </div>
+        <input type="text" id="chatInput" placeholder="Type your message here..." style="width: 300px;">
+        <button onclick="sendMessage()" id="sendBtn">Send</button>
+    </div>
+    
+    <hr>
+    
+    <!-- Voice Section -->
+    <h2>Voice Interaction (OpenAI Whisper)</h2>
+    <div>
+        <button onclick="startRecording()" id="recordBtn">Record Voice</button>
+        <button onclick="transcribeAudio()" id="transcribeBtn" disabled>Transcribe with Whisper</button>
+        <button onclick="playResponse()" id="playBtn">Play Response</button>
+        <br><br>
+        <div id="voiceStatus">Voice system ready</div>
+        <br>
+        <p>OpenAI Whisper Status: <span id="whisperStatus">Not Connected</span></p>
+        <p>ElevenLabs Status: <span id="elevenLabsStatus">Not Connected</span></p>
+    </div>
+    
+    <hr>
+    
+    <!-- Transcripts Section -->
+    <h2>Voice Transcripts</h2>
+    <div>
+        <div id="transcriptsList" style="border: 1px solid black; height: 150px; overflow-y: scroll; padding: 10px; margin-bottom: 10px;">
+            <p><em>No transcripts yet. Record voice and transcribe to see results here.</em></p>
+        </div>
+        <button onclick="uploadSelectedToMemory()">Upload Selected Transcript to Memory</button>
+        <button onclick="clearTranscripts()">Clear All Transcripts</button>
+    </div>
+    
+    <hr>
+    
+    <!-- Memory Section -->
+    <h2>Memory Bank</h2>
+    <div>
+        <button onclick="loadRandomMemories()">Load Random Memories</button>
+        <button onclick="addMemory()">Add Memory</button>
+        <button onclick="searchMemories()">Search Memories</button>
+        <br><br>
+        <div id="memoryList" style="border: 1px solid black; height: 200px; overflow-y: scroll; padding: 10px;">
+            <div>
+                <strong>2024-01-15 10:30 AM</strong><br>
+                Sample memory: I love spending time with my family during the holidays.
+            </div>
+            <br>
+            <div>
+                <strong>2024-01-14 3:45 PM</strong><br>
+                Work memory: Had a breakthrough on the AI project today.
+            </div>
+            <br>
+            <div>
+                <strong>2024-01-13 8:20 PM</strong><br>
+                Personal reflection: Sometimes I wonder about consciousness.
+            </div>
+        </div>
+    </div>
+    
+    <hr>
+    
+    <!-- Status Section -->
+    <h2>System Status</h2>
+    <ul>
+        <li>Pinecone Status: <span id="pineconeStatus">Not Connected</span></li>
+        <li>OpenAI Status: <span id="openaiStatus">Not Connected</span></li>
+        <li>ElevenLabs Status: <span id="elevenLabsStatus2">Not Connected</span></li>
+        <li>Total Memories: <span id="memoryCount">3</span></li>
+    </ul>
+
+    <!-- JavaScript functionality now in script.js -->
+    <script>
+        // Simple chat functionality (placeholder)
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const messages = document.getElementById('chatMessages');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            if (input.value.trim() === '') return;
+            
+            // Add user message
+            const userMessage = document.createElement('p');
+            userMessage.innerHTML = `<strong>You:</strong> ${input.value}`;
+            messages.appendChild(userMessage);
+            
+            // Simulate AI response
+            setTimeout(() => {
+                const aiMessage = document.createElement('p');
+                aiMessage.innerHTML = `<strong>Capsule AI:</strong> I understand you said "${input.value}". This will connect to your RAG system.`;
+                messages.appendChild(aiMessage);
+                messages.scrollTop = messages.scrollHeight;
+            }, 1000);
+            
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // Memory functions (placeholder)
+        function loadRandomMemories() {
+            const memoryList = document.getElementById('memoryList');
+            memoryList.innerHTML = '<p>Loading random memories from Pinecone...</p>';
+            
+            setTimeout(() => {
+                memoryList.innerHTML = `
+                    <div><strong>2024-01-16 2:15 PM</strong><br>Random memory loaded from Pinecone.</div><br>
+                    <div><strong>2024-01-15 9:30 AM</strong><br>Another memory from vector search.</div><br>
+                `;
+            }, 1500);
+        }
+        
+        function addMemory() {
+            const content = prompt('Enter a new memory:');
+            if (content && content.trim() !== '') {
+                const memoryList = document.getElementById('memoryList');
+                const timestamp = new Date().toLocaleString();
+                const newMemory = document.createElement('div');
+                newMemory.innerHTML = `<strong>${timestamp}</strong><br>${content}<br><br>`;
+                memoryList.insertBefore(newMemory, memoryList.firstChild);
+                
+                // Update memory count
+                const memoryCount = document.getElementById('memoryCount');
+                const currentCount = parseInt(memoryCount.textContent) || 0;
+                memoryCount.textContent = currentCount + 1;
+            }
+        }
+        
+        function searchMemories() {
+            const query = prompt('Search memories for:');
+            if (query && query.trim() !== '') {
+                const memoryList = document.getElementById('memoryList');
+                memoryList.innerHTML = `<p>Searching Pinecone for "${query}"...</p>`;
+                
+                setTimeout(() => {
+                    memoryList.innerHTML = `<div><strong>Search Result</strong><br>Found memory containing "${query}" via semantic search.</div>`;
+                }, 1500);
+            }
+        }
+        
+        function playResponse() {
+            const voiceStatus = document.getElementById('voiceStatus');
+            voiceStatus.innerHTML = 'Playing ElevenLabs TTS response...';
+            
+            setTimeout(() => {
+                voiceStatus.innerHTML = 'Voice system ready';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
