@@ -44,7 +44,7 @@ def text_to_speech():
         # Generate audio using ElevenLabs
         audio = elevenlabs.text_to_speech.convert(
             text=text,
-            voice_id="56AoDkrOh6qfVPDXZ7Pt",  # Updated voice ID
+            voice_id="SCqcbwl5zFNSDHndqgWY",  # Updated voice ID
             model_id="eleven_multilingual_v2",
             output_format="mp3_44100_128",
         )

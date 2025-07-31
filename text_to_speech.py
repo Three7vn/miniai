@@ -11,7 +11,7 @@ elevenlabs = ElevenLabs(
 
 audio = elevenlabs.text_to_speech.convert(
     text="The first move is what sets everything in motion.",
-    voice_id="56AoDkrOh6qfVPDXZ7Pt",
+    voice_id="SCqcbwl5zFNSDHndqgWY",
     model_id="eleven_multilingual_v2",
     output_format="mp3_44100_128",
 )
