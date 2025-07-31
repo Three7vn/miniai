@@ -9,17 +9,28 @@ const TTS_API_BASE = "http://localhost:5001/api"; // For ElevenLabs TTS
 const RAG_API_BASE = "http://127.0.0.1:8000"; // For RAG API
 
 // Initialize the application
-document.addEventListener("DOMContentLoaded", function () {
-  initializeSpeechRecognition();
-  checkWhisperStatus();
-  checkElevenLabsStatus();
-  loadTranscripts();
 
-  // Set up keyboard listener for chat
-  const chatInput = document.getElementById("chatInput");
-  if (chatInput) {
-    chatInput.addEventListener("keypress", handleKeyPress);
-  }
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSpeechRecognition();
+    checkWhisperStatus();
+    checkElevenLabsStatus();
+    loadTranscripts();
+    
+    // Set up keyboard listener for chat
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', handleKeyPress);
+    }
+    
+    // Set up keyboard listener for manual transcript input
+    const manualTextInput = document.getElementById('manualTextInput');
+    if (manualTextInput) {
+        manualTextInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                addManualTranscript();
+            }
+        });
+    }
 });
 
 // Initialize Web Speech API
@@ -143,14 +154,22 @@ function transcribeAudio() {
 }
 
 // Transcript Management Functions
-async function loadTranscripts() {
-  try {
-    const response = await fetch(`${SPEECH_API_BASE}/transcripts`);
-    const data = await response.json();
+function loadTranscripts() {
+    // Load transcripts from local storage
+    const localTranscripts = localStorage.getItem('transcripts');
+    if (localTranscripts) {
+        try {
+            transcripts = JSON.parse(localTranscripts);
+            displayTranscripts();
+        } catch (error) {
+            console.error('Error parsing stored transcripts:', error);
+            transcripts = [];
+            displayTranscripts();
+        }
+    } else {
+        transcripts = [];
+        displayTranscripts();
 
-    if (data.status === "success") {
-      transcripts = data.transcripts;
-      displayTranscripts();
     }
   } catch (error) {
     console.error("Error loading transcripts:", error);
@@ -177,24 +196,35 @@ function addTranscriptToUI(transcriptText) {
   saveTranscript(transcript);
 }
 
-async function saveTranscript(transcript) {
-  try {
-    // Try to save to backend
-    const response = await fetch(`${SPEECH_API_BASE}/transcripts`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(transcript),
-    });
+function saveTranscript(transcript) {
+    // Save to local storage
+    localStorage.setItem('transcripts', JSON.stringify(transcripts));
+}
 
-    if (!response.ok) {
-      throw new Error("Backend not available");
+// Manual transcript addition
+function addManualTranscript() {
+    const input = document.getElementById('manualTextInput');
+    const text = input.value.trim();
+    
+    if (!text) {
+        alert('Please enter some text to add as a transcript.');
+        return;
     }
-  } catch (error) {
-    // Fallback to local storage
-    localStorage.setItem("transcripts", JSON.stringify(transcripts));
-  }
+    
+    // Add the text as a transcript
+    addTranscriptToUI(text);
+    
+    // Clear the input field
+    input.value = '';
+    
+    // Show feedback
+    const voiceStatus = document.getElementById('voiceStatus');
+    const originalStatus = voiceStatus.textContent;
+    voiceStatus.textContent = 'Manual transcript added!';
+    
+    setTimeout(() => {
+        voiceStatus.textContent = originalStatus;
+    }, 2000);
 }
 
 function displayTranscripts() {
@@ -242,17 +272,14 @@ function selectTranscript(transcriptId) {
   }
 }
 
-async function deleteTranscript(transcriptId) {
-  try {
-    const response = await fetch(
-      `${SPEECH_API_BASE}/transcripts/${transcriptId}`,
-      {
-        method: "DELETE",
-      }
-    );
+function deleteTranscript(transcriptId) {
+    transcripts = transcripts.filter(t => t.id !== transcriptId);
+    displayTranscripts();
+    localStorage.setItem('transcripts', JSON.stringify(transcripts));
+    
+    if (selectedTranscriptId === transcriptId) {
+        selectedTranscriptId = null;
 
-    if (!response.ok) {
-      throw new Error("Backend not available");
     }
   } catch (error) {
     // Continue with local deletion even if backend fails
@@ -267,23 +294,16 @@ async function deleteTranscript(transcriptId) {
   }
 }
 
-async function clearTranscripts() {
-  if (!confirm("Are you sure you want to clear all transcripts?")) {
-    return;
-  }
 
-  try {
-    const response = await fetch(`${SPEECH_API_BASE}/transcripts/clear`, {
-      method: "DELETE",
-    });
-  } catch (error) {
-    // Continue even if backend fails
-  }
-
-  transcripts = [];
-  selectedTranscriptId = null;
-  displayTranscripts();
-  localStorage.setItem("transcripts", JSON.stringify(transcripts));
+function clearTranscripts() {
+    if (!confirm('Are you sure you want to clear all transcripts?')) {
+        return;
+    }
+    
+    transcripts = [];
+    selectedTranscriptId = null;
+    displayTranscripts();
+    localStorage.setItem('transcripts', JSON.stringify(transcripts));
 }
 
 function uploadSelectedToMemory() {
@@ -410,41 +430,64 @@ function searchMemories() {
 
 // Text-to-Speech Functions using ElevenLabs
 async function playResponse() {
-  if (!selectedTranscriptId) {
-    alert("Please select a transcript first to play as speech.");
-    return;
-  }
-
-  const selectedTranscript = transcripts.find(
-    (t) => t.id === selectedTranscriptId
-  );
-  if (!selectedTranscript) {
-    alert("Selected transcript not found.");
-    return;
-  }
-
-  await convertTextToSpeech(selectedTranscript.text);
+    const voiceStatus = document.getElementById('voiceStatus');
+    
+    if (!selectedTranscriptId) {
+        alert('Please select a transcript first to play as speech.');
+        return;
+    }
+    
+    const selectedTranscript = transcripts.find(t => t.id === selectedTranscriptId);
+    if (!selectedTranscript) {
+        alert('Selected transcript not found.');
+        return;
+    }
+    
+    voiceStatus.textContent = 'Converting text to speech...';
+    
+    try {
+        await convertTextToSpeech(selectedTranscript.text);
+    } catch (error) {
+        voiceStatus.textContent = 'Voice system ready';
+        console.error('TTS Error:', error);
+    }
 }
 
 async function convertTextToSpeech(text) {
-  try {
-    const response = await fetch(`${TTS_API_BASE}/text-to-speech`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: text,
-      }),
-    });
+    const voiceStatus = document.getElementById('voiceStatus');
+    
+    try {
+        console.log('Converting text to speech:', text);
+        const response = await fetch(`${TTS_API_BASE}/text-to-speech`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('TTS Response:', data);
+        
+        if (data.status === 'success') {
+            voiceStatus.textContent = 'Playing audio...';
+            // Play the audio file
+            playAudioFile(data.audio_file);
+        } else {
+            voiceStatus.textContent = 'Voice system ready';
+            alert(`Text-to-speech failed: ${data.message}`);
+        }
+    } catch (error) {
+        voiceStatus.textContent = 'Voice system ready';
+        console.error('TTS Error:', error);
+        alert(`Text-to-speech error: ${error.message}`);
 
-    const data = await response.json();
-
-    if (data.status === "success") {
-      // Play the audio file
-      playAudioFile(data.audio_file);
-    } else {
-      alert(`Text-to-speech failed: ${data.message}`);
     }
   } catch (error) {
     alert(`Text-to-speech error: ${error.message}`);
@@ -452,14 +495,45 @@ async function convertTextToSpeech(text) {
 }
 
 function playAudioFile(audioFilePath) {
-  // Create audio element and play
-  const audio = new Audio(
-    `${TTS_API_BASE}/play-audio/${encodeURIComponent(audioFilePath)}`
-  );
-  audio.play().catch((error) => {
-    console.error("Error playing audio:", error);
-    alert("Error playing audio. Please try again.");
-  });
+
+    const voiceStatus = document.getElementById('voiceStatus');
+    
+    // Create audio element and play
+    const audioUrl = `${TTS_API_BASE}/play-audio/${encodeURIComponent(audioFilePath)}`;
+    console.log('Playing audio from:', audioUrl);
+    
+    const audio = new Audio(audioUrl);
+    
+    audio.onloadstart = () => {
+        console.log('Audio loading started');
+    };
+    
+    audio.oncanplay = () => {
+        console.log('Audio can start playing');
+    };
+    
+    audio.onplay = () => {
+        console.log('Audio started playing');
+        voiceStatus.textContent = 'Playing audio...';
+    };
+    
+    audio.onended = () => {
+        console.log('Audio finished playing');
+        voiceStatus.textContent = 'Voice system ready';
+    };
+    
+    audio.onerror = (error) => {
+        console.error('Audio error:', error);
+        voiceStatus.textContent = 'Voice system ready';
+        alert('Error playing audio. Please try again.');
+    };
+    
+    audio.play().catch(error => {
+        console.error('Error playing audio:', error);
+        voiceStatus.textContent = 'Voice system ready';
+        alert('Error playing audio. Please try again.');
+    });
+
 }
 
 // ElevenLabs Status Check
